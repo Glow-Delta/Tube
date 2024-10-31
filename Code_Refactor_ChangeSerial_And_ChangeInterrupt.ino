@@ -96,7 +96,7 @@ void setup() {
   Wire.begin();
   Wire.setClock(800000);  // Set I²C speed to 400kHz //Dit mogelijk nog aanpassen.
 
-  while(!Serial){}
+  while(!Serial){} //ERUIT HALEN WANNEER DE COMPUTER ER NIET MEER AAN HANGT!!!
  
   Serial.println("Setup started!");
 
