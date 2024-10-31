@@ -408,7 +408,7 @@ void send_serial(int id, int activation) {
   message += '\n';
   Serial.println(message);
   char dataToSend = Serial.read();
-  Serial1.write(dataToSend);
+  Serial1.println(dataToSend);
   // mySerial.flush(); // Ensure the message is sent
   // TODO: implement attach interrupts.
 }
