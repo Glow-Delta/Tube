@@ -187,29 +187,29 @@ void checkForInterupts(unsigned long now, uint8_t address, volatile bool &interr
 // Function to configure MCP23017 registers for GPA7 (echo) and GPB0 (trigger)
 void setupMCP23017() {
   // Set GPB0 as output (trigger) and GPA7 as input (echo)
-  writeRegisterA(IODIRA, 0b11111111);  // IODIRA: 1 = input for GPA7 (echo)
-  writeRegisterA(IODIRB, 0b00000000);  // IODIRB: 0 = output for GPB0 (trigger)
-  writeRegisterB(IODIRA, 0b11111111);  // IODIRA: 1 = input for GPA7 (echo)
-  writeRegisterB(IODIRB, 0b00000000);  // IODIRB: 0 = output for GPB0 (trigger)
+  writeRegister(MCP23017_ADDRESS_A, IODIRA, 0b11111111);  // IODIRA: 1 = input for GPA7 (echo)
+  writeRegister(MCP23017_ADDRESS_A, IODIRB, 0b00000000);  // IODIRB: 0 = output for GPB0 (trigger)
+  writeRegister(MCP23017_ADDRESS_B, IODIRA, 0b11111111);  // IODIRA: 1 = input for GPA7 (echo)
+  writeRegister(MCP23017_ADDRESS_B, IODIRB, 0b00000000);  // IODIRB: 0 = output for GPB0 (trigger)
  
   // Enable interrupt on GPA7 (echo pin)
-  writeRegisterA(GPINTENA, 0b11111111);  // GPINTENA: Enable interrupt on GPA7 (echo)
-  writeRegisterB(GPINTENA, 0b11111111);  // GPINTENA: Enable interrupt on GPA7 (echo)
+  writeRegister(MCP23017_ADDRESS_A, GPINTENA, 0b11111111);  // GPINTENA: Enable interrupt on GPA7 (echo)
+  writeRegister(MCP23017_ADDRESS_B, GPINTENA, 0b11111111);  // GPINTENA: Enable interrupt on GPA7 (echo)
   
   // Set interrupt-on-change to trigger on any change (both rising and falling edge) for GPA7
-  writeRegisterA(INTCONA, 0b00000000);  // INTCONA: 0 = compare to previous value (interrupt on any change)
-  writeRegisterB(INTCONA, 0b00000000);  // INTCONA: 0 = compare to previous value (interrupt on any change)
+  writeRegister(MCP23017_ADDRESS_A, 0b00000000);  // INTCONA: 0 = compare to previous value (interrupt on any change)
+  writeRegister(MCP23017_ADDRESS_B, 0b00000000);  // INTCONA: 0 = compare to previous value (interrupt on any change)
  
-  writeRegisterA(DEFVALA, 0b11111111); // DEFVALA: 1 = high
-  writeRegisterA(DEFVALB, 0b00000000); // DEFVALB: 0 = low
-  writeRegisterB(DEFVALA, 0b11111111); // DEFVALA: 1 = high
-  writeRegisterB(DEFVALB, 0b00000000); // DEFVALB: 0 = low
+  writeRegister(MCP23017_ADDRESS_A, DEFVALA, 0b11111111); // DEFVALA: 1 = high
+  writeRegister(MCP23017_ADDRESS_A, DEFVALB, 0b00000000); // DEFVALB: 0 = low
+  writeRegister(MCP23017_ADDRESS_B, DEFVALA, 0b11111111); // DEFVALA: 1 = high
+  writeRegister(MCP23017_ADDRESS_B, DEFVALB, 0b00000000); // DEFVALB: 0 = low
  
   // Enable pull-up resistor on GPA7 (echo)
-  writeRegisterA(GPPUA, 0b11111111);  // GPPUA: 1 = pull-up enabled on GPA7 (echo)
-  writeRegisterA(GPPUB, 0b11111111);  // GPPUB: 1 = pull-up enabled on GPA7 (echo)
-  writeRegisterB(GPPUA, 0b11111111);  // GPPUA: 1 = pull-up enabled on GPA7 (echo)
-  writeRegisterB(GPPUB, 0b11111111);  // GPPUB: 1 = pull-up enabled on GPA7 (echo)
+  writeRegister(MCP23017_ADDRESS_A, GPPUA, 0b11111111);  // GPPUA: 1 = pull-up enabled on GPA7 (echo)
+  writeRegister(MCP23017_ADDRESS_A, GPPUB, 0b11111111);  // GPPUB: 1 = pull-up enabled on GPA7 (echo)
+  writeRegister(MCP23017_ADDRESS_B, GPPUA, 0b11111111);  // GPPUA: 1 = pull-up enabled on GPA7 (echo)
+  writeRegister(MCP23017_ADDRESS_B, GPPUB, 0b11111111);  // GPPUB: 1 = pull-up enabled on GPA7 (echo)
   
   // Clear any pending interrupts (optional)
   readRegister(MCP23017_ADDRESS_A, 0x12);  // GPIOA: Read to clear any existing interrupt flags for Port A
@@ -266,17 +266,10 @@ void triggerNextUltrasonicB() {
   Wire.endTransmission();
 }
  
- 
+
 // Function to write to MCP23017 register
-void writeRegisterA(uint8_t reg, uint8_t value) {
+void writeRegister(uint8_t address, uint8_t reg, uint8_t value) {
   Wire.beginTransmission(MCP23017_ADDRESS_A);
-  Wire.write(reg);
-  Wire.write(value);
-  Wire.endTransmission();
-}
-// Function to write to MCP23017 register
-void writeRegisterB(uint8_t reg, uint8_t value) {
-  Wire.beginTransmission(MCP23017_ADDRESS_B);
   Wire.write(reg);
   Wire.write(value);
   Wire.endTransmission();
