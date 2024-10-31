@@ -93,6 +93,8 @@ void setup() {
  
   // Start serial communication for debugging
   Serial.begin(115200); 
+  Serial1.begin(115200);
+
   Wire.begin();
   Wire.setClock(800000);  // Set I²C speed to 400kHz //Dit mogelijk nog aanpassen.
 
@@ -400,11 +402,11 @@ void ActiveAnimation() {
  
 void send_serial(int id, int activation) {
   // TODO: implement detach interrupts.
-  Serial.println("Sending message");
+  Serial1.println("Sending message");
   String message = "id=" + String(id); // Convert id to String
   message += ":activation_level=" + String(activation); // Convert activation to String
   message += '\n';
-  Serial.println(message);
+  Serial1.println(message);
   // mySerial.flush(); // Ensure the message is sent
   // TODO: implement attach interrupts.
 }
