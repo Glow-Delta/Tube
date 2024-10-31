@@ -212,8 +212,8 @@ void setupMCP23017() {
   writeRegisterB(GPPUB, 0b11111111);  // GPPUB: 1 = pull-up enabled on GPA7 (echo)
   
   // Clear any pending interrupts (optional)
-  readRegisterA(0x12);  // GPIOA: Read to clear any existing interrupt flags for Port A
-  readRegisterB(0x12);  // GPIOA: Read to clear any existing interrupt flags for Port A
+  readRegister(MCP23017_ADDRESS_A, 0x12);  // GPIOA: Read to clear any existing interrupt flags for Port A
+  readRegister(MCP23017_ADDRESS_B, 0x12);  // GPIOA: Read to clear any existing interrupt flags for Port A
 }
  
 // Function to trigger the ultrasonic sensor for chip A
@@ -281,24 +281,13 @@ void writeRegisterB(uint8_t reg, uint8_t value) {
   Wire.write(value);
   Wire.endTransmission();
 }
- 
-// Function to read from MCP23017 register
-uint8_t readRegisterA(uint8_t reg) {
-  Wire.beginTransmission(MCP23017_ADDRESS_A);
-  Wire.write(reg);
-  Wire.endTransmission();
-  
-  Wire.requestFrom(MCP23017_ADDRESS_A, 1);
-  return Wire.read();
-}
 
-// Function to read from MCP23017 register
-uint8_t readRegisterB(uint8_t reg) {
-  Wire.beginTransmission(MCP23017_ADDRESS_B);
+uint8_t readRegister(uint8_t address, uint8_t reg) {
+  Wire.beginTransmission(address);
   Wire.write(reg);
   Wire.endTransmission();
   
-  Wire.requestFrom(MCP23017_ADDRESS_B, 1);
+  Wire.requestFrom(address, 1);
   return Wire.read();
 }
  
