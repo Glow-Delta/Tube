@@ -120,7 +120,7 @@ void setup() {
  
 void loop() {
   unsigned long now = micros();
- 
+
   checkForInterupts(now, MCP23017_ADDRESS_A, interuptedA, sensorTriggeredA, risingA, travelTimeA, lastTriggeredSensorA, lastSensorTriggerTimeA, sensorPinsA);
   checkForInterupts(now, MCP23017_ADDRESS_B, interuptedB, sensorTriggeredB, risingB, travelTimeB, lastTriggeredSensorB, lastSensorTriggerTimeB, sensorPinsB);
   
@@ -165,10 +165,9 @@ void loop() {
   }
 }
  
-
 void checkForInterupts(unsigned long now, uint8_t address, volatile bool &interrupted, bool &sensorTriggered, unsigned long &rising, unsigned long &travelTime, int &lastTriggeredSensor, unsigned long &lastSensorTriggerTime, const uint8_t sensorPins[]) {
   if (!sensorTriggered) {
-    triggerNextUltrasonic(address, lastTriggeredSensor, sensorPins);
+    triggerNextUltrasonic(rising, travelTime, interrupted, sensorTriggered, lastSensorTriggerTime, lastTriggeredSensor, SENSOR_COUNT, address, sensorPins);
   } else if (interrupted) {
     readRegister(address, INTCAPA);
     interrupted = false;
@@ -180,7 +179,7 @@ void checkForInterupts(unsigned long now, uint8_t address, volatile bool &interr
     }
   } else if (now - lastSensorTriggerTime > 50000) {
     readRegister(address, INTCAPA);
-    triggerNextUltrasonic(address, lastTriggeredSensor, sensorPins);
+    triggerNextUltrasonic(rising, travelTime, interrupted, sensorTriggered, lastSensorTriggerTime, lastTriggeredSensor, SENSOR_COUNT, address, sensorPins);
   }
 }
 
@@ -216,56 +215,30 @@ void setupMCP23017() {
   readRegister(MCP23017_ADDRESS_B, 0x12);  // GPIOA: Read to clear any existing interrupt flags for Port A
 }
  
-// Function to trigger the ultrasonic sensor for chip A
-void triggerNextUltrasonicA() {
-  //Serial.print("triggering sensor: ");
-  //Serial.println(index);
-  // Record the time the trigger pulse was sent
-  risingA = 0;
-  travelTimeA = 0;
-  interuptedA = false;
-  sensorTriggeredA = true;
-  lastSensorTriggerTimeA = micros();
- 
-  int ultrasonicToTrigger = (lastTriggeredSensorA + 1) % SENSOR_COUNT;
-  lastTriggeredSensorA = ultrasonicToTrigger;
- 
-  Wire.beginTransmission(MCP23017_ADDRESS_A);
-  Wire.write(GPIOB);
-  Wire.write(sensorPinsA[ultrasonicToTrigger]);
-  
-  delayMicroseconds(10);  // Delay for 10 microseconds
- 
-  Wire.write(GPIOB);
-  Wire.write(0b00000000);
-  Wire.endTransmission();
-}
+void triggerNextUltrasonic(int &rising, int &travelTime, bool &interupted, bool &sensorTriggered, unsigned long &lastSensorTriggerTime, int &lastTriggeredSensor, int sensorCount, uint8_t mcpAddress, const uint8_t* sensorPins) {
+  // Reset trigger-related variables
+  rising = 0;
+  travelTime = 0;
+  interupted = false;
+  sensorTriggered = true;
+  lastSensorTriggerTime = micros();
 
-// Function to trigger the ultrasonic sensor for chip B
-void triggerNextUltrasonicB() {
-  //Serial.print("triggering sensor: ");
-  //Serial.println(index);
-  // Record the time the trigger pulse was sent
-  risingB = 0;
-  travelTimeB = 0;
-  interuptedB = false;
-  sensorTriggeredB = true;
-  lastSensorTriggerTimeB = micros();
- 
-  int ultrasonicToTrigger = (lastTriggeredSensorB + 1) % SENSOR_COUNT;
-  lastTriggeredSensorB = ultrasonicToTrigger;
- 
-  Wire.beginTransmission(MCP23017_ADDRESS_B);
+  // Increment the sensor index
+  int ultrasonicToTrigger = (lastTriggeredSensor + 1) % sensorCount;
+  lastTriggeredSensor = ultrasonicToTrigger;
+
+  // Start the transmission for the specified MCP chip
+  Wire.beginTransmission(mcpAddress);
   Wire.write(GPIOB);
-  Wire.write(sensorPinsB[ultrasonicToTrigger]);
-  
+  Wire.write(sensorPins[ultrasonicToTrigger]);
+
   delayMicroseconds(10);  // Delay for 10 microseconds
- 
+
+  // Reset the GPIO state
   Wire.write(GPIOB);
   Wire.write(0b00000000);
   Wire.endTransmission();
 }
- 
 
 // Function to write to MCP23017 register
 void writeRegister(uint8_t address, uint8_t reg, uint8_t value) {
