@@ -59,14 +59,13 @@ unsigned long lightTimer = millis();
 #define INTERRUPT_A_PIN 8
 #define INTERRUPT_B_PIN 9
 
-#define SENSOR_COUNT_A 4
-#define SENSOR_COUNT_B 4
+#define SENSOR_COUNT 4
  
 volatile bool interuptedA;
 unsigned long risingA = 0;
 unsigned long travelTimeA = 0;
  
-const uint8_t sensorPinsA[SENSOR_COUNT_A] = {0b00000001, 0b00000010, 0b00000100, 0b00001000};
+const uint8_t sensorPinsA[SENSOR_COUNT] = {0b00000001, 0b00000010, 0b00000100, 0b00001000};
  
 int lastTriggeredSensorA = 0;
 bool sensorTriggeredA = false;
@@ -76,7 +75,7 @@ volatile bool interuptedB;
 unsigned long risingB = 0;
 unsigned long travelTimeB = 0;
  
-const uint8_t sensorPinsB[SENSOR_COUNT_B] = {0b00000001, 0b00000010, 0b00000100, 0b00001000};
+const uint8_t sensorPinsB[SENSOR_COUNT] = {0b00000001, 0b00000010, 0b00000100, 0b00001000};
  
 int lastTriggeredSensorB = 0;
 bool sensorTriggeredB = false;
@@ -122,8 +121,8 @@ void setup() {
 void loop() {
   unsigned long now = micros();
  
-  checkForInteruptsA(now);
-  checkForInteruptsB(now);
+  checkForInterupts(now, MCP23017_ADDRESS_A, interuptedA, sensorTriggeredA, risingA, travelTimeA, lastTriggeredSensorA, lastSensorTriggerTimeA, sensorPinsA);
+  checkForInterupts(now, MCP23017_ADDRESS_B, interuptedB, sensorTriggeredB, risingB, travelTimeB, lastTriggeredSensorB, lastSensorTriggerTimeB, sensorPinsB);
   
   //TODO: handel the travel time instead of calculating the distance in cm.
   if (travelTimeA != 0) {
@@ -139,7 +138,7 @@ void loop() {
     int distanceCm = travelTimeB *  0.034 / 2;
 
     if (distanceCm < 250) {
-      transfer(lastTriggeredSensorB + SENSOR_COUNT_A, distanceCm);
+      transfer(lastTriggeredSensorB + SENSOR_COUNT, distanceCm);
     }
   }
  
@@ -166,47 +165,22 @@ void loop() {
   }
 }
  
-void checkForInteruptsA(unsigned long now) {
-  if (!sensorTriggeredA) {
-    triggerNextUltrasonicA();
-  }
-  else if (interuptedA) {
-    readRegisterA(INTCAPA);
-    interuptedA = false;
- 
-    if (risingA == 0) {
-      risingA = now;
-    }
-    else {
-      travelTimeA = now - risingA;
-      sensorTriggeredA = false;
-    }
-  }
-  else if (now - lastSensorTriggerTimeA > 50000) {
-    readRegisterA(INTCAPA);
-    triggerNextUltrasonicA();
-  }
-}
 
-void checkForInteruptsB(unsigned long now) {
-  if (!sensorTriggeredB) {
-    triggerNextUltrasonicB();
-  }
-  else if (interuptedB) {
-    readRegisterB(INTCAPA);
-    interuptedB = false;
- 
-    if (risingB == 0) {
-      risingB = now;
-    }
+void checkForInterupts(unsigned long now, uint8_t address, volatile bool &interrupted, bool &sensorTriggered, unsigned long &rising, unsigned long &travelTime, int &lastTriggeredSensor, unsigned long &lastSensorTriggerTime, const uint8_t sensorPins[]) {
+  if (!sensorTriggered) {
+    triggerNextUltrasonic(address, lastTriggeredSensor, sensorPins);
+  } else if (interrupted) {
+    readRegister(address, INTCAPA);
+    interrupted = false;
+
+    if (rising == 0) rising = now;
     else {
-      travelTimeB = now - risingB;
-      sensorTriggeredB = false;
+      travelTime = now - rising;
+      sensorTriggered = false;
     }
-  }
-  else if (now - lastSensorTriggerTimeB > 50000) {
-    readRegisterB(INTCAPA);
-    triggerNextUltrasonicB();
+  } else if (now - lastSensorTriggerTime > 50000) {
+    readRegister(address, INTCAPA);
+    triggerNextUltrasonic(address, lastTriggeredSensor, sensorPins);
   }
 }
 
@@ -253,7 +227,7 @@ void triggerNextUltrasonicA() {
   sensorTriggeredA = true;
   lastSensorTriggerTimeA = micros();
  
-  int ultrasonicToTrigger = (lastTriggeredSensorA + 1) % SENSOR_COUNT_A;
+  int ultrasonicToTrigger = (lastTriggeredSensorA + 1) % SENSOR_COUNT;
   lastTriggeredSensorA = ultrasonicToTrigger;
  
   Wire.beginTransmission(MCP23017_ADDRESS_A);
@@ -278,7 +252,7 @@ void triggerNextUltrasonicB() {
   sensorTriggeredB = true;
   lastSensorTriggerTimeB = micros();
  
-  int ultrasonicToTrigger = (lastTriggeredSensorB + 1) % SENSOR_COUNT_B;
+  int ultrasonicToTrigger = (lastTriggeredSensorB + 1) % SENSOR_COUNT;
   lastTriggeredSensorB = ultrasonicToTrigger;
  
   Wire.beginTransmission(MCP23017_ADDRESS_B);
