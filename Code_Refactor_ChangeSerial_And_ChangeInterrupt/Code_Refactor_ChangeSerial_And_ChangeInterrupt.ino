@@ -253,7 +253,7 @@ uint8_t readRegister(uint8_t address, uint8_t reg) {
   Wire.write(reg);
   Wire.endTransmission();
   
-  Wire.requestFrom(address, 1);
+  Wire.requestFrom(&address, 1);
   return Wire.read();
 }
  
