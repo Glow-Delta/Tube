@@ -196,8 +196,8 @@ void setupMCP23017() {
   writeRegister(MCP23017_ADDRESS_B, GPINTENA, 0b11111111);  // GPINTENA: Enable interrupt on GPA7 (echo)
   
   // Set interrupt-on-change to trigger on any change (both rising and falling edge) for GPA7
-  writeRegister(MCP23017_ADDRESS_A, 0b00000000);  // INTCONA: 0 = compare to previous value (interrupt on any change)
-  writeRegister(MCP23017_ADDRESS_B, 0b00000000);  // INTCONA: 0 = compare to previous value (interrupt on any change)
+  writeRegister(MCP23017_ADDRESS_A, INTCONA, 0b00000000);  // INTCONA: 0 = compare to previous value (interrupt on any change)
+  writeRegister(MCP23017_ADDRESS_B, INTCONA, 0b00000000);  // INTCONA: 0 = compare to previous value (interrupt on any change)
  
   writeRegister(MCP23017_ADDRESS_A, DEFVALA, 0b11111111); // DEFVALA: 1 = high
   writeRegister(MCP23017_ADDRESS_A, DEFVALB, 0b00000000); // DEFVALB: 0 = low
