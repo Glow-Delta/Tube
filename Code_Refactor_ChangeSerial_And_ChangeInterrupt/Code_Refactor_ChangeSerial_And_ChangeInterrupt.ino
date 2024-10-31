@@ -402,11 +402,13 @@ void ActiveAnimation() {
  
 void send_serial(int id, int activation) {
   // TODO: implement detach interrupts.
-  Serial1.println("Sending message");
+  Serial.println("Sending message");
   String message = "id=" + String(id); // Convert id to String
   message += ":activation_level=" + String(activation); // Convert activation to String
   message += '\n';
-  Serial1.println(message);
+  Serial.println(message);
+  char dataToSend = Serial.read();
+  Serial1.write(dataToSend);
   // mySerial.flush(); // Ensure the message is sent
   // TODO: implement attach interrupts.
 }
