@@ -91,15 +91,15 @@ int distances[5][8];
 void setup() {
  
   // Start serial communication for debugging
-  Serial.begin(115200); 
+  // Serial.begin(115200); 
   Serial1.begin(115200);
 
   Wire.begin();
   Wire.setClock(800000);  // Set I²C speed to 400kHz //Dit mogelijk nog aanpassen.
 
-  while(!Serial){} //ERUIT HALEN WANNEER DE COMPUTER ER NIET MEER AAN HANGT!!!
+  //while(!Serial){} //ERUIT HALEN WANNEER DE COMPUTER ER NIET MEER AAN HANGT!!!
  
-  Serial.println("Setup started!");
+  //Serial.println("Setup started!");
 
   pinMode(INTERRUPT_A_PIN, INPUT_PULLUP);
   pinMode(INTERRUPT_B_PIN, INPUT_PULLUP);
@@ -146,21 +146,21 @@ void loop() {
     // Calculate smoothed average and print results (will be removed later)
     for (int i = 0; i < 8; i++) {
       int avgDistance = average(i);
-      Serial.print(avgDistance);
-      Serial.print(", ");
+      // Serial.print(avgDistance);
+      // Serial.print(", ");
     }
-    Serial.println(200);
+    // Serial.println(200);
   }
  
   int Amount = getAmountOfActivatedSensors();
     if (!interuptedA && !interuptedB) {
-    send_serial(0, Amount);
+    sendSerial(0, Amount);
   }
   if (Amount > 100) {
-    Serial.println("Light ON");
+    //Serial.println("Light ON");
     ActiveAnimation();
   } else {
-    Serial.println("Light OFF");
+    //Serial.println("Light OFF");
     Heartbeat();
   }
 }
@@ -215,7 +215,7 @@ void setupMCP23017() {
   readRegister(MCP23017_ADDRESS_B, 0x12);  // GPIOA: Read to clear any existing interrupt flags for Port A
 }
  
-void triggerNextUltrasonic(int &rising, int &travelTime, bool &interupted, bool &sensorTriggered, unsigned long &lastSensorTriggerTime, int &lastTriggeredSensor, int sensorCount, uint8_t mcpAddress, const uint8_t* sensorPins) {
+void triggerNextUltrasonic(int rising, int travelTime, bool interupted, bool sensorTriggered, unsigned long lastSensorTriggerTime, int lastTriggeredSensor, int sensorCount, uint8_t mcpAddress, const uint8_t* sensorPins) {
   // Reset trigger-related variables
   rising = 0;
   travelTime = 0;
@@ -256,7 +256,7 @@ uint8_t readRegister(uint8_t address, uint8_t reg) {
   Wire.requestFrom(&address, 1);
   return Wire.read();
 }
- 
+
 // Shifts previous distance measurements up and adds the new one
 void transfer(int sensorIndex, int newDistance) {
   // Shift all rows up for the specific sensor
@@ -329,15 +329,12 @@ void ActiveAnimation() {
   }
 }
  
-void send_serial(int id, int activation) {
+void sendSerial(int id, int activation) {
   // TODO: implement detach interrupts.
-  Serial.println("Sending message");
   String message = "id=" + String(id); // Convert id to String
   message += ":activation_level=" + String(activation); // Convert activation to String
   message += '\n';
-  Serial.println(message);
-  char dataToSend = Serial.read();
-  Serial1.println(dataToSend);
+  Serial1.println(message);
   // mySerial.flush(); // Ensure the message is sent
   // TODO: implement attach interrupts.
 }
