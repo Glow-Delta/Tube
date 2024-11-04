@@ -7,12 +7,15 @@
 
 #include <FastLED.h>
  
-#define LEDPIN        6
-#define NUMPIXELS  461
+#define LEDPIN 5
+#define NUMPIXELS 461
 #define FASTLED_ALLOW_INTERRUPTS 0
  
 CRGB* leds;
 byte greenIntensity = 255;
+
+int currentSensorCount = 0;
+int previousCount = 0;
 
 struct Section {
   int start;
@@ -32,7 +35,7 @@ void setup() {
  
   // Start serial communication for debugging
   Serial.begin(115200); 
-  Serial1.begin(115200);
+  Serial1.begin(9600);
 
   sensorSetupMethod();
 
@@ -46,63 +49,51 @@ void setup() {
  
 void loop() {
   sensorLoopMethod();
+
+  // previousCount = currentSensorCount;
+  // currentSensorCount = getAmountOfActivatedSensors();
+
   //moved the sendserial method to the sensorLogicHeader and added a parameter to the send frequency, 
   // beware that the more frequent you send data the less accurate the sensor values will be
 }
  
 
  
-void Heartbeat() {
-  if((millis() - lightTimer) > 33) {
-    static byte fade = 0;
-    static byte up = 1;
+void Red() {
+  
+  if ((millis() - lightTimer) > 33) {
+    //Serial.println("RED");
+    fill_solid(leds, NUMPIXELS, CRGB::Red);
+    FastLED.show();
+    lightTimer = millis();
+  }
+  
+}
  
-    fade += (up ? 5 : -5);
- 
-    if (fade >= 255 || fade <= 0) {
-      up = (up == 1) ? 0 : 1;
-    }
-    fill_solid(leds, NUMPIXELS, CRGB(fade, fade, 255));
+void Blue() {
+  
+  if ((millis() - lightTimer) > 33) {
+    //Serial.println("BLUE");
+    fill_solid(leds, NUMPIXELS, CRGB::Blue);
     FastLED.show();
     lightTimer = millis();
   }
 }
  
-void ActiveAnimation() {
-  //if((millis() - lightTimer) > 33) {
-  if((millis() - lightTimer) > 10) {    // PLAY WITH THIS SETTNG
-    // fill_solid(leds, NUMPIXELS, CRGB(0, 0, 255));
-    // int maxStep = (sections[0].end - sections[0].start) / 2;
-
-    greenIntensity = max(greenIntensity - 85, 0);
-    static int step = (sections[0].end - sections[0].start) / 2;
-    //for (int step = maxStep; step >= 0; step--) {
-      for (int s = 0; s < 4; s++) {
-        leds[sections[s].start + step] = CRGB(255, greenIntensity, 0);
-        leds[sections[s].end - step] = CRGB(255, greenIntensity, 0);
-      }
-      FastLED.show();
-    step--;
-    if (step == 0) {
-         step = (sections[0].end - sections[0].start) / 2;
-    }
-    lightTimer = millis();
- 
-    if (greenIntensity == 0) {
-      greenIntensity = 255;
-    }
-  }
-}
- 
 void send_serial(int id, int activation) {
-  // TODO: implement detach interrupts.
   Serial.println("Sending message");
+ 
+  // Construct the message to send
   String message = "id=" + String(id); // Convert id to String
   message += ":activation_level=" + String(activation); // Convert activation to String
-  message += '\n';
-  Serial.println(message);
-  char dataToSend = Serial.read();
-  Serial1.println(dataToSend);
-  // mySerial.flush(); // Ensure the message is sent
-  // TODO: implement attach interrupts.
+  message += '\n'; // Add a newline character to signify the end of the message
+ 
+  Serial.println(message); // Print the message to the Serial Monitor for debugging
+ 
+  // Send the message over Serial1
+  Serial1.print(message); // Use print() or println() to send the message
+  // Note: If you use print(), remember the Teensy will need to read until '\n' if you're using readStringUntil
+ 
+  // Optional: flush to ensure all data is sent
+  Serial1.flush(); // Wait until all data is sent
 }
