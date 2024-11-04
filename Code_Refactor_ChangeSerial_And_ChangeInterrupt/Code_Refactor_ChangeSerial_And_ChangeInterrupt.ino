@@ -46,31 +46,11 @@ void setup() {
  
 void loop() {
   sensorLoopMethod();
- 
-  int Amount = getAmountOfActivatedSensors();
-    if (!interuptedA && !interuptedB) {
-    send_serial(0, Amount);
-  }
-  //light goes on if one sensor detects a user
-  if (Amount >= 1) {
-    Serial.println("Light ON");
-    ActiveAnimation();
-  } else {
-    Serial.println("Light OFF");
-    Heartbeat();
-  }
+  //moved the sendserial method to the sensorLogicHeader and added a parameter to the send frequency, 
+  // beware that the more frequent you send data the less accurate the sensor values will be
 }
  
-int getAmountOfActivatedSensors() {
-  int amountOfActivatedSensors = 0;
- 
-  for (int i = 0; i < totalSensorCount; i++) {
-    if (distances(i) < 200 && distances(i) > 0) {
-      amountOfActivatedSensors++;
-    }
-  }
-  return amountOfActivatedSensors;
-}
+
  
 void Heartbeat() {
   if((millis() - lightTimer) > 33) {
