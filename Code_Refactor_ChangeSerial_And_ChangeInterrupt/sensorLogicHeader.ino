@@ -32,6 +32,8 @@
 #define SENSOR_COUNT_A 8
 #define SENSOR_COUNT_B 8
 
+
+
 #define TIMEOUT_TIME 50000 //in microseconds when to timeout a sensor and continue to the next
 
 const int totalSensorCount = SENSOR_COUNT_A + SENSOR_COUNT_B;
@@ -44,7 +46,7 @@ bool sensorTriggered = false;
 
 //debug only
 unsigned long lastSerialCom = 0;
-#define SERIAL_COM_DELAY_MS 100
+#define SERIAL_COM_DELAY_MS 500
 
 const uint8_t sensorPins[SENSOR_COUNT_A] = {0b00000001, 0b00000010, 0b00000100, 0b00001000, 0b00010000, 0b00100000, 0b01000000, 0b10000000};
 
@@ -66,21 +68,10 @@ void sensorLoopMethod() {
 
   handleSensorLogic();
 
-  int Amount = getAmountOfActivatedSensors();
-
-  //light goes on if one sensor detects a user
-  if (Amount >= 5) {
-    Red();
-  } else if (Amount < 2) {
-    Blue();
-  }
+  activeSensors = getAmountOfActivatedSensors();
 
   if (millis() - lastSerialCom > SERIAL_COM_DELAY_MS) {
-    printDistances(distances);
-    Serial.print("Amount: ");
-    Serial.println(Amount);
-    send_serial(1, Amount);
-
+    send_serial(tubeState);
     lastSerialCom = millis();
   }
 }
