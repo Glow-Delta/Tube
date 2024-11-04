@@ -181,8 +181,7 @@ void processCurrentAction(LightAction* action) {
 void setup() {
   Serial.begin(9600);
 
-  
-
+  sensorSetupMethod();
 
   FastLED.addLeds<NEOPIXEL, LED_PIN>(leds, NUM_LEDS);
   
@@ -190,39 +189,32 @@ void setup() {
 }
 
 void loop() {
-    unsigned long currentMillis = millis();
 
-    if (currentMillis - lastFrameTime >= FRAME_DELAY) {
-        lastFrameTime = currentMillis;
+  sensorLoopMethod();
+  
+  unsigned long currentMillis = millis();
 
-        LightAction* currentAction = lightQueue.peek();
-        if (currentAction != nullptr && currentAction->active) {
-            processCurrentAction(currentAction);
+  if (currentMillis - lastFrameTime >= FRAME_DELAY) {
+      lastFrameTime = currentMillis;
 
-            if (!currentAction->active) {
-                lightQueue.dequeue();
-            }
-        } else {
-            setAnimationForState();
-        }
-    }
+      LightAction* currentAction = lightQueue.peek();
+      if (currentAction != nullptr && currentAction->active) {
+          processCurrentAction(currentAction);
 
-    int previousState = tubeState;
-    if (millis() - lastActiveSensorChange > 5000) {
-        lastActiveSensorChange = millis();
-        activeSensors = random(0, 17);
-        updateTubeState();
+          if (!currentAction->active) {
+              lightQueue.dequeue();
+          }
+      } else {
+          setAnimationForState();
+      }
+  }
 
-        Serial.print("Active sensors: ");
-        Serial.println(activeSensors);
+  int previousState = tubeState;
+  updateTubeState();
 
-        Serial.print("State: ");
-        Serial.println(tubeState);
-    }
-
-    if (tubeState != previousState) {
-        setAnimationForState();  // Change animation if state has changed
-    }
+  if (tubeState != previousState) {
+      setAnimationForState();  // Change animation if state has changed
+  }
 }
 
 
