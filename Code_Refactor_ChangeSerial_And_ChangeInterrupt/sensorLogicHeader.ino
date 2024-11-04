@@ -66,20 +66,20 @@ void sensorLoopMethod() {
 
   handleSensorLogic();
 
+  int Amount = getAmountOfActivatedSensors();
+
+  //light goes on if one sensor detects a user
+  if (Amount >= 5) {
+    Red();
+  } else if (Amount < 2) {
+    Blue();
+  }
+
   if (millis() - lastSerialCom > SERIAL_COM_DELAY_MS) {
-    int Amount = getAmountOfActivatedSensors();
-
     printDistances(distances);
-    send_serial(0, Amount);
-
-    //light goes on if one sensor detects a user
-    if (Amount >= 1) {
-      Serial.println("Light ON");
-      ActiveAnimation();
-    } else {
-      Serial.println("Light OFF");
-      Heartbeat();
-    }
+    Serial.print("Amount: ");
+    Serial.println(Amount);
+    send_serial(1, Amount);
 
     lastSerialCom = millis();
   }
@@ -142,9 +142,9 @@ void handleSensorLogic() {
 
       //
 
-      distances[lastTriggeredSensor] = distanceCm;
-
-      
+      if (distanceCm < 250) {
+        distances[lastTriggeredSensor] = distanceCm;//(((5 * distances[lastTriggeredSensor]) + distanceCm) * 0.1667);
+      }
 
       sensorTriggered = false;
     }
@@ -235,7 +235,7 @@ int getAmountOfActivatedSensors() {
   int amountOfActivatedSensors = 0;
  
   for (int i = 0; i < totalSensorCount; i++) {
-    if (distances[i] < 50 && distances[i] > 0) {
+    if (distances[i] < 150 && distances[i] > 0) {
       amountOfActivatedSensors++;
     }
   }
