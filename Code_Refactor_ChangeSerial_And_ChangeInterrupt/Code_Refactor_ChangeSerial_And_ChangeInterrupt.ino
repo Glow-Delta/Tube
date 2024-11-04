@@ -1,90 +1,236 @@
-// Aanpassingen:
-// - ISR-methode.
-// - Detach interrupt en attach interrupt verwijderd.
-// - Handle and detach interrupt zijn verwijderd.
-// - MySerial implementatie verwijderd. (dus 0 en 1 zijn de RX en TX pinnen).
-// - Interrupt pins zijn nu 8, 9.
-
 #include <FastLED.h>
- 
-#define LEDPIN 5
-#define NUMPIXELS 461
-#define FASTLED_ALLOW_INTERRUPTS 0
- 
-CRGB* leds;
-byte greenIntensity = 255;
 
-int currentSensorCount = 0;
-int previousCount = 0;
+#define LED_PIN     5
+#define NUM_LEDS    461
+#define MAX_ACTIONS 10
+#define FPS         30
+#define FRAME_DELAY (1000 / FPS)
+#define TUBE_ID 1
 
-struct Section {
-  int start;
-  int end;
+CRGB leds[NUM_LEDS];
+unsigned long lastFrameTime = 0;
+
+int tubeState = 1;
+int activeSensors = 0;
+
+unsigned long lastActiveSensorChange = 0;
+
+// Transition variables
+uint8_t currentHue = 160;  // Initial hue for idle (blue)
+uint8_t targetHue = 160;
+uint8_t hueTransitionSpeed = 3;  // Speed of hue transition, lower is slower
+
+// Struct for each light action
+struct LightAction {
+    int duration;
+    int minBrightness;
+    int maxBrightness;
+    int totalFrames;
+    int currentFrame;
+    bool active;
+    uint8_t hue;  // Add a hue member to the struct
+
+    LightAction() : duration(0), minBrightness(0), maxBrightness(0), totalFrames(0), currentFrame(0), active(false), hue(0) {}
+
+    void initialize(int dur, int minB, int maxB, uint8_t h) {
+        duration = dur;
+        minBrightness = minB;
+        maxBrightness = maxB;
+        totalFrames = (duration / FRAME_DELAY);
+        currentFrame = 0;
+        active = true;
+        hue = h; // Set the hue for this action
+    }
+
+    int getCurrentBrightness() {
+        float progress = float(currentFrame) / totalFrames;
+        return minBrightness + (sin(progress * PI) * (maxBrightness - minBrightness));
+    }
+
+    void advanceFrame() {
+        if (currentFrame < totalFrames) {
+            currentFrame++;
+        } else {
+            active = false;
+        }
+    }
 };
- 
-Section sections[] = {
-  {0, 116},
-  {117, 231},
-  {232, 345},
-  {346, 460}
+
+// Queue for light actions
+struct LightQueue {
+    LightAction actions[MAX_ACTIONS];
+    int front;
+    int rear;
+    int size;
+
+    LightQueue() : front(0), rear(-1), size(0) {}
+
+    bool enqueue(LightAction action) {
+        if (size == MAX_ACTIONS) {
+            return false;
+        }
+        rear = (rear + 1) % MAX_ACTIONS;
+        actions[rear] = action;
+        size++;
+        return true;
+    }
+
+    bool dequeue() {
+        if (size == 0) {
+            return false;
+        }
+        front = (front + 1) % MAX_ACTIONS;
+        size--;
+        return true;
+    }
+
+    LightAction* peek() {
+        if (size == 0) {
+            return nullptr;
+        }
+        return &actions[front];
+    }
 };
- 
-unsigned long lightTimer = millis();
- 
+
+LightQueue lightQueue;
+
+// Add pulse actions for a breathing or pulsing effect with hue
+void addPulseAction(int duration, int minBrightness, int maxBrightness, uint8_t hue) {
+    LightAction action;
+    action.initialize(duration, minBrightness, maxBrightness, hue); // Pass hue
+    lightQueue.enqueue(action);
+}
+
+// Define animations for each state with hue
+void idleAnimation() {
+    addPulseAction(1000, 100, 112, 175); // Blue hue
+    addPulseAction(1000, 112, 125, 145); // Blue hue
+}
+
+void lowActivityAnimation() {
+    addPulseAction(750, 125, 137, 81); // Green hue
+    addPulseAction(750, 137, 150, 111); // Green hue
+}
+
+void moderateActivityAnimation() {
+    addPulseAction(500, 150, 175, 17); // Yellow hue
+    addPulseAction(500, 175, 200, 62); // Yellow hue
+}
+
+void highActivityAnimation() {
+    addPulseAction(500, 200, 255, 0); // Red hue
+}
+
+// Function to update tube state based on active sensors
+void updateTubeState() {
+    if (activeSensors >= 0 && activeSensors <= 2) {
+        tubeState = 0; // Idle
+    } else if (activeSensors >= 3 && activeSensors <= 7) {
+        tubeState = 1; // Low activity
+    } else if (activeSensors >= 8 && activeSensors <= 12) {
+        tubeState = 2; // Moderate activity
+    } else if (activeSensors >= 13 && activeSensors <= 16) {
+        tubeState = 3; // High activity
+    }
+}
+
+// Function to set animation based on tube state
+void setAnimationForState() {
+    lightQueue = LightQueue();  // Clear existing actions
+
+    switch (tubeState) {
+        case 0:
+            idleAnimation();
+            break;
+        case 1:
+            lowActivityAnimation();
+            break;
+        case 2:
+            moderateActivityAnimation();
+            break;
+        case 3:
+            highActivityAnimation();
+            break;
+    }
+}
+
+// Smooth transition of hue towards target
+void updateCurrentHue(uint8_t targetHue) {
+    if (currentHue < targetHue) {
+        currentHue = min(currentHue + hueTransitionSpeed, targetHue);
+    } else if (currentHue > targetHue) {
+        currentHue = max(currentHue - hueTransitionSpeed, targetHue);
+    }
+}
+
+// Function to process the current animation frame
+void processCurrentAction(LightAction* action) {
+    int brightness = action->getCurrentBrightness();
+
+    // Gradually transition to the target color
+    updateCurrentHue(action->hue); // Use the action's hue
+
+    for (int i = 0; i < NUM_LEDS; i++) {
+        leds[i] = CHSV(currentHue, 255, brightness);
+    }
+    FastLED.show();
+
+    action->advanceFrame();
+}
+
 void setup() {
- 
-  // Start serial communication for debugging
-  Serial.begin(115200); 
-  Serial1.begin(9600);
+  Serial.begin(9600);
 
-  sensorSetupMethod();
+  
 
-  while(!Serial){} //ERUIT HALEN WANNEER DE COMPUTER ER NIET MEER AAN HANGT!!!
- 
-  Serial.println("Setup started!");
- 
-  leds = new CRGB[NUMPIXELS]; //An array of RBG led pixels.
-  FastLED.addLeds<WS2812, LEDPIN, GRB>(leds, NUMPIXELS);
+
+  FastLED.addLeds<NEOPIXEL, LED_PIN>(leds, NUM_LEDS);
+  
+  setAnimationForState();  // Initialize with the first animation
 }
- 
+
 void loop() {
-  sensorLoopMethod();
+    unsigned long currentMillis = millis();
 
-  // previousCount = currentSensorCount;
-  // currentSensorCount = getAmountOfActivatedSensors();
+    if (currentMillis - lastFrameTime >= FRAME_DELAY) {
+        lastFrameTime = currentMillis;
 
-  //moved the sendserial method to the sensorLogicHeader and added a parameter to the send frequency, 
-  // beware that the more frequent you send data the less accurate the sensor values will be
-}
- 
+        LightAction* currentAction = lightQueue.peek();
+        if (currentAction != nullptr && currentAction->active) {
+            processCurrentAction(currentAction);
 
- 
-void Red() {
-  
-  if ((millis() - lightTimer) > 33) {
-    //Serial.println("RED");
-    fill_solid(leds, NUMPIXELS, CRGB::Red);
-    FastLED.show();
-    lightTimer = millis();
-  }
-  
+            if (!currentAction->active) {
+                lightQueue.dequeue();
+            }
+        } else {
+            setAnimationForState();
+        }
+    }
+
+    int previousState = tubeState;
+    if (millis() - lastActiveSensorChange > 5000) {
+        lastActiveSensorChange = millis();
+        activeSensors = random(0, 17);
+        updateTubeState();
+
+        Serial.print("Active sensors: ");
+        Serial.println(activeSensors);
+
+        Serial.print("State: ");
+        Serial.println(tubeState);
+    }
+
+    if (tubeState != previousState) {
+        setAnimationForState();  // Change animation if state has changed
+    }
 }
- 
-void Blue() {
-  
-  if ((millis() - lightTimer) > 33) {
-    //Serial.println("BLUE");
-    fill_solid(leds, NUMPIXELS, CRGB::Blue);
-    FastLED.show();
-    lightTimer = millis();
-  }
-}
- 
-void send_serial(int id, int activation) {
+
+
+void send_serial(int activation) {
   Serial.println("Sending message");
  
   // Construct the message to send
-  String message = "id=" + String(id); // Convert id to String
+  String message = "id=" + String(TUBE_ID); // Convert id to String
   message += ":activation_level=" + String(activation); // Convert activation to String
   message += '\n'; // Add a newline character to signify the end of the message
  
