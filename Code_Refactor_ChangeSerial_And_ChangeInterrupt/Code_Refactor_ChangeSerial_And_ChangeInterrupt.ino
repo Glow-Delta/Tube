@@ -180,6 +180,7 @@ void processCurrentAction(LightAction* action) {
 
 void setup() {
   Serial.begin(9600);
+  Serial1.begin(9600);
 
   sensorSetupMethod();
 
@@ -191,6 +192,8 @@ void setup() {
 void loop() {
 
   sensorLoopMethod();
+
+  //Serial.println("test");
   
   unsigned long currentMillis = millis();
 
