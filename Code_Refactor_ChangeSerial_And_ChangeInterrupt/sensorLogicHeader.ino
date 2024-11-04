@@ -43,15 +43,14 @@ int lastTriggeredSensor = 0;
 bool sensorTriggered = false;
 
 //debug only
-unsigned long lastPrint = 0;
-#define PRINT_DELAY_MS 100
+unsigned long lastSerialCom = 0;
+#define SERIAL_COM_DELAY_MS 100
 
 const uint8_t sensorPins[SENSOR_COUNT_A] = {0b00000001, 0b00000010, 0b00000100, 0b00001000, 0b00010000, 0b00100000, 0b01000000, 0b10000000};
 
 int distances[SENSOR_COUNT_A + SENSOR_COUNT_B];
 
 void sensorSetupMethod() {
-  Serial.begin(9600);
 
   Wire.begin();
   Wire.setClock(400000);  // Set I²C speed to 400kHz
@@ -67,9 +66,22 @@ void sensorLoopMethod() {
 
   handleSensorLogic();
 
-  if (millis() - lastPrint > PRINT_DELAY_MS) {
+  if (millis() - lastSerialCom > SERIAL_COM_DELAY_MS) {
+    int Amount = getAmountOfActivatedSensors();
+
     printDistances(distances);
-    lastPrint = millis();
+    send_serial(0, Amount);
+
+    //light goes on if one sensor detects a user
+    if (Amount >= 1) {
+      Serial.println("Light ON");
+      ActiveAnimation();
+    } else {
+      Serial.println("Light OFF");
+      Heartbeat();
+    }
+
+    lastSerialCom = millis();
   }
 }
 
@@ -217,6 +229,17 @@ void printDistances(int distances[]) {
     }
   }
   Serial.println("]");  // Close the array with a bracket and move to the next line
+}
+
+int getAmountOfActivatedSensors() {
+  int amountOfActivatedSensors = 0;
+ 
+  for (int i = 0; i < totalSensorCount; i++) {
+    if (distances[i] < 50 && distances[i] > 0) {
+      amountOfActivatedSensors++;
+    }
+  }
+  return amountOfActivatedSensors;
 }
 
 
