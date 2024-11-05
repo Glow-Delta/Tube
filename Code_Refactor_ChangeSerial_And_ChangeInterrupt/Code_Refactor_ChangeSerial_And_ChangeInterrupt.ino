@@ -212,12 +212,10 @@ void setup() {
 
 void loop() {
 
+  int previousState = tubeState;
   sensorLoopMethod();
   
   unsigned long currentMillis = millis();
-
-  int previousState = tubeState;
-  updateTubeState();
 
   if (tubeState != previousState) {
       setAnimationForState();  // Change animation if state has changed
