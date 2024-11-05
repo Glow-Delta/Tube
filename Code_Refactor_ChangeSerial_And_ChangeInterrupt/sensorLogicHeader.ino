@@ -47,6 +47,7 @@ bool sensorTriggered = false;
 //debug only
 unsigned long lastSerialCom = 0;
 #define SERIAL_COM_DELAY_MS 500
+int activeSensorsTemp = 0;
 
 const uint8_t sensorPins[SENSOR_COUNT_A] = {0b00000001, 0b00000010, 0b00000100, 0b00001000, 0b00010000, 0b00100000, 0b01000000, 0b10000000};
 
@@ -68,10 +69,12 @@ void sensorLoopMethod() {
 
   handleSensorLogic();
 
-  activeSensors = getAmountOfActivatedSensors();
+  getAmountOfActivatedSensors();
+
+  updateTubeState();
 
   if (millis() - lastSerialCom > SERIAL_COM_DELAY_MS) {
-    send_serial(tubeState);
+    //send_serial(tubeState);
     lastSerialCom = millis();
   }
 }
@@ -129,12 +132,8 @@ void handleSensorLogic() {
 
       long distanceCm = (interuptTime - rising) *  0.017;
 
-      // handle noise here
-
-      //
-
       if (distanceCm < 250) {
-        distances[lastTriggeredSensor] = distanceCm;//(((5 * distances[lastTriggeredSensor]) + distanceCm) * 0.1667);
+        distances[lastTriggeredSensor] = distanceCm;
       }
 
       sensorTriggered = false;
@@ -223,15 +222,31 @@ void printDistances(int distances[]) {
 }
 
 int getAmountOfActivatedSensors() {
+  //temporarily return a random number of active sensors
+  if (millis() - lastActiveSensorChange > 5000) {
+    lastActiveSensorChange = millis();
+    activeSensors = random(0, 17);
+    updateTubeState();
+
+    Serial.print("Active sensors: ");
+    Serial.println(activeSensors);
+
+    Serial.print("State: ");
+    Serial.println(tubeState);
+  }
+
+  return activeSensors;
+
   int amountOfActivatedSensors = 0;
  
   for (int i = 0; i < totalSensorCount; i++) {
-    if (distances[i] < 150 && distances[i] > 0) {
+    if (distances[i] < 250 && distances[i] > 0) {
       amountOfActivatedSensors++;
     }
   }
   return amountOfActivatedSensors;
 }
+
 
 
 
