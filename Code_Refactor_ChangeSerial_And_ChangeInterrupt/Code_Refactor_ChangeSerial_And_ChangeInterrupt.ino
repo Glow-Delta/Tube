@@ -103,36 +103,57 @@ void addPulseAction(int duration, int minBrightness, int maxBrightness, uint8_t 
 
 // Define animations for each state with hue
 void idleAnimation() {
-    addPulseAction(1000, 100, 112, 175); // Blue hue
-    addPulseAction(1000, 112, 125, 145); // Blue hue
+    addPulseAction(1000, 100, 25, 160); // Blue hue
+    //addPulseAction(1000, 112, 125, 145); // Blue hue
 }
 
 void lowActivityAnimation() {
-    addPulseAction(750, 125, 137, 81); // Green hue
-    addPulseAction(750, 137, 150, 111); // Green hue
+    addPulseAction(750, 125, 150, 96); // Green hue
+    //addPulseAction(750, 137, 150, 111); // Green hue
 }
 
 void moderateActivityAnimation() {
-    addPulseAction(500, 150, 175, 17); // Yellow hue
-    addPulseAction(500, 175, 200, 62); // Yellow hue
+    addPulseAction(500, 150, 200, 32); // Yellow hue
+    //addPulseAction(500, 175, 200, 62); // Yellow hue
 }
 
 void highActivityAnimation() {
     addPulseAction(500, 200, 255, 0); // Red hue
 }
 
-// Function to update tube state based on active sensors
+// Function to update tube state based on active sensors with hysteresis
 void updateTubeState() {
-    if (activeSensors >= 0 && activeSensors <= 2) {
-        tubeState = 0; // Idle
-    } else if (activeSensors >= 3 && activeSensors <= 7) {
-        tubeState = 1; // Low activity
-    } else if (activeSensors >= 8 && activeSensors <= 12) {
-        tubeState = 2; // Moderate activity
-    } else if (activeSensors >= 13 && activeSensors <= 16) {
-        tubeState = 3; // High activity
+    switch (tubeState) {
+        case 0: // Idle state
+            if (activeSensors >= 4) {
+                tubeState = 1; // Switch to Low activity
+            }
+            break;
+
+        case 1: // Low activity state
+            if (activeSensors <= 2) {
+                tubeState = 0; // Back to Idle
+            } else if (activeSensors >= 8) {
+                tubeState = 2; // Switch to Moderate activity
+            }
+            break;
+
+        case 2: // Moderate activity state
+            if (activeSensors <= 5) {
+                tubeState = 1; // Back to Low activity
+            } else if (activeSensors >= 13) {
+                tubeState = 3; // Switch to High activity
+            }
+            break;
+
+        case 3: // High activity state
+            if (activeSensors <= 10) {
+                tubeState = 2; // Back to Moderate activity
+            }
+            break;
     }
 }
+
 
 // Function to set animation based on tube state
 void setAnimationForState() {
@@ -192,10 +213,15 @@ void setup() {
 void loop() {
 
   sensorLoopMethod();
-
-  //Serial.println("test");
   
   unsigned long currentMillis = millis();
+
+  int previousState = tubeState;
+  updateTubeState();
+
+  if (tubeState != previousState) {
+      setAnimationForState();  // Change animation if state has changed
+  }
 
   if (currentMillis - lastFrameTime >= FRAME_DELAY) {
       lastFrameTime = currentMillis;
@@ -210,14 +236,7 @@ void loop() {
       } else {
           setAnimationForState();
       }
-  }
-
-  int previousState = tubeState;
-  updateTubeState();
-
-  if (tubeState != previousState) {
-      setAnimationForState();  // Change animation if state has changed
-  }
+  } 
 }
 
 
