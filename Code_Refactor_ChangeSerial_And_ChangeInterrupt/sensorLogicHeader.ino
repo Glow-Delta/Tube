@@ -76,6 +76,7 @@ void sensorLoopMethod() {
   if (millis() - lastSerialCom > SERIAL_COM_DELAY_MS) {
     //send_serial(tubeState);
     printDistances(distances);
+    //Serial.println(tubeState);
     lastSerialCom = millis();
   }
 }
@@ -133,7 +134,7 @@ void handleSensorLogic() {
 
       long distanceCm = (interuptTime - rising) *  0.017;
 
-      if (distanceCm < 250) {
+      if (distanceCm < 200) {
         distances[lastTriggeredSensor] = distanceCm;
       }
 
@@ -228,14 +229,8 @@ int getAmountOfActivatedSensors() {
   //   lastActiveSensorChange = millis();
   //   activeSensors = random(0, 17);
   //   updateTubeState();
-
-  //   Serial.print("Active sensors: ");
-  //   Serial.println(activeSensors);
-
-  //   Serial.print("State: ");
-  //   Serial.println(tubeState);
   // }
-
+  
   // return activeSensors;
 
   int amountOfActivatedSensors = 0;
