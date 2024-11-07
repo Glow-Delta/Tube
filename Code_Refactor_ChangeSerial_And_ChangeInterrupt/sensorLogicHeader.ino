@@ -74,8 +74,8 @@ void sensorLoopMethod() {
   updateTubeState();
 
   if (millis() - lastSerialCom > SERIAL_COM_DELAY_MS) {
-    //send_serial(tubeState);
-    printDistances(distances);
+    send_serial(tubeState);
+    //printDistances(distances);
     //Serial.println(tubeState);
     lastSerialCom = millis();
   }
