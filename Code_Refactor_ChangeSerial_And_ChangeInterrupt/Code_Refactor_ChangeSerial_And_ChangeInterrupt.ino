@@ -7,6 +7,18 @@
 #define FRAME_DELAY (1000 / FPS)
 #define TUBE_ID 1
 
+CRGB stage0Color1 = CRGB(28, 81, 255); //light blue
+CRGB stage0Color2 = CRGB(255,255,255); //white
+
+CRGB stage1Color1 = CRGB(28, 81, 255); //light blue
+CRGB stage1Color2 = CRGB(255, 208, 0); //yellow
+
+CRGB stage2Color1 = CRGB(0 ,255 ,255); //light blue
+CRGB stage2Color2 = CRGB(255, 48, 117); //pink
+
+CRGB stage3Color1 = CRGB(100, 48,255); //light blue
+CRGB stage3Color2 = CRGB(255, 48, 76); //orange
+
 CRGB leds[NUM_LEDS];
 unsigned long lastFrameTime = 0;
 
@@ -15,47 +27,40 @@ int activeSensors = 0;
 
 unsigned long lastActiveSensorChange = 0;
 
-struct BrightnessHuePair {
-  int brightness;
-  int hue;
-};
-
-int currentBrightness = 0;
-int currentHue = 0;
+CRGB currentColor = CRGB(0,0,0);
 
 // Struct for each light action
 struct LightAction {
     int duration;
-    int beginBrightness;
-    int endBrightness;
-    uint8_t beginHue;
-    uint8_t endHue;
+    CRGB beginColor;
+    CRGB endColor;
     int totalFrames;
     int currentFrame;
     bool active;
 
-    LightAction() : duration(0), beginBrightness(0), endBrightness(0), beginHue(0), endHue(0), totalFrames(0), currentFrame(0), active(false) {}
+    LightAction() : duration(0), beginColor(CRGB(0,0,0)), endColor(CRGB(0,0,0)), totalFrames(0), currentFrame(0), active(false) {}
 
-    void initialize(int dur, int beginB, int endB, uint8_t beginH, uint8_t endH) {
+    void initialize(int dur, CRGB beginC, CRGB endC) {
         duration = dur;
-        beginBrightness = beginB;
-        endBrightness = endB;
-        beginHue = beginH;
-        endHue = endH;
+        beginColor = beginC;
+        endColor = endC;
         totalFrames = (duration / FRAME_DELAY);
         currentFrame = 0;
         active = true;
     }
 
     // Function to get current brightness and hue
-    BrightnessHuePair getCurrentBrightnessAndHue() {
-    float progress = float(currentFrame) / totalFrames;
+    CRGB getCurrentColor() {
+      float progress = float(currentFrame) / totalFrames;
 
-    int brightness = getCos(beginBrightness, endBrightness, progress);
-    int hue = getCos(beginHue, endHue, progress);
+      uint8_t red = getCos(currentColor.red, endColor.red, progress);
+      uint8_t green = getCos(currentColor.green, endColor.green, progress);
+      uint8_t blue = getCos(currentColor.blue, endColor.blue, progress);
 
-    return {brightness, hue};
-}
+      CRGB color = CRGB(red, green, blue);
+
+      return color;
+    }
 
     int getCos(int begin, int end, float p) {
       float d = begin - end;          // Calculate d as (begin - end)
@@ -112,30 +117,30 @@ struct LightQueue {
 LightQueue lightQueue;
 
 // Add pulse actions for a breathing or pulsing effect with hue
-void addLightAction(int duration, int minBrightness, int maxBrightness, uint8_t beginHue, uint8_t endHue) {
+void addLightAction(int duration, CRGB beginColor, CRGB endColor) {
     LightAction action1;
     LightAction action2;
-    action1.initialize(duration, minBrightness, maxBrightness, beginHue, endHue);
-    action2.initialize(duration, maxBrightness, minBrightness, endHue, beginHue);
+    action1.initialize(duration, beginColor, endColor);
+    action2.initialize(duration, endColor, beginColor);
     lightQueue.enqueue(action1);
     lightQueue.enqueue(action2);
 }
 
 // Define animations for each state with hue
 void idleAnimation() {
-    addLightAction(1500, 100, 130, 184, 139); // Blue hue
+    addLightAction(1500, stage0Color1, stage0Color2); // YELLOW hue
 }
 
 void lowActivityAnimation() {
-    addLightAction(1000, 130, 180, 139, 90); // Green hue
+    addLightAction(1000, stage1Color1, stage1Color2); // Green hue
 }
 
 void moderateActivityAnimation() {
-    addLightAction(750, 180, 215, 90, 25); // Green hue
+    addLightAction(750, stage2Color1, stage2Color2); // Green hue
 }
 
 void highActivityAnimation() {
-    addLightAction(500, 215, 255, 25, 0); // Red hue
+    addLightAction(500, stage3Color1, stage3Color2); // Red hue
 }
 
 // Function to update tube state based on active sensors with hysteresis
@@ -172,44 +177,41 @@ void updateTubeState() {
 }
 
 
-void setAnimationForState(int startBrightness = 0, int startHue = 0, bool useTransition = false) {
+void setAnimationForState(CRGB startColor = CRGB(0,0,0), bool useTransition = false) {
     lightQueue = LightQueue();  // Clear existing actions
 
-    int targetBrightness = 0;
-    int targetHue = 0;
+    CRGB targetColor = 0;
 
     // Determine the target values based on the next tube state
     switch (tubeState) {
         case 0:
-            targetBrightness = 100; // starting brightness for idle animation
-            targetHue = 184;        // starting hue for idle animation
+            targetColor = stage0Color1;
             break;
         case 1:
-            targetBrightness = 130; // starting brightness for low activity animation
-            targetHue = 139;        // starting hue for low activity animation
+            targetColor = stage1Color1;
             break;
         case 2:
-            targetBrightness = 180; // starting brightness for moderate activity animation
-            targetHue = 90;         // starting hue for moderate activity animation
+            targetColor = stage1Color1;
             break;
         case 3:
-            targetBrightness = 215; // starting brightness for high activity animation
-            targetHue = 25;         // starting hue for high activity animation
+            targetColor = stage1Color1;
             break;
     }
 
     // Calculate a dynamic duration based on the brightness and hue changes
-    int brightnessDifference = abs(currentBrightness - targetBrightness);
-    int hueDifference = abs(currentHue - targetHue);
+    int redDifference = abs(currentColor.red - targetColor.red);
+    int greenDifference = abs(currentColor.green - targetColor.green);
+    int blueDifference = abs(currentColor.blue - targetColor.blue);
 
-    int transitionDuration = ((brightnessDifference + hueDifference) * 5);  // Scaling factor for smoothness
-    //Serial.print("transitionDelay: ");
-    //Serial.println(transitionDuration);
+    int colorDifference = redDifference + greenDifference + blueDifference;
+
+
+    int transitionDuration = colorDifference * 1.5;
 
     if (useTransition) {
         // Add transition action with calculated dynamic duration
         LightAction transitionAction;
-        transitionAction.initialize(transitionDuration, currentBrightness, targetBrightness, currentHue, targetHue);
+        transitionAction.initialize(transitionDuration, currentColor, targetColor);
         lightQueue.enqueue(transitionAction);
     }
 
@@ -234,23 +236,23 @@ void setAnimationForState(int startBrightness = 0, int startHue = 0, bool useTra
 
 // Function to process the current animation frame
 void processCurrentAction(LightAction* action) {
-  BrightnessHuePair BHPair = action->getCurrentBrightnessAndHue();
+  CRGB color = action->getCurrentColor();
 
   for (int i = 0; i < NUM_LEDS; i++) {
-      leds[i] = CHSV(BHPair.hue, 255, BHPair.brightness);
+      leds[i] = color;
   }
 
-  
+  currentColor = color;
 
-  currentBrightness = BHPair.brightness;
-  currentHue = BHPair.hue;
-
-  // Serial.print(tubeState);
-  // Serial.print(", ");
-  // Serial.print(currentHue);
-  // Serial.print(", ");
-  // Serial.println(currentBrightness);
   FastLED.show();
+
+  Serial.print(color.red);
+  Serial.print(", ");
+  Serial.print(color.green);
+  Serial.print(", ");
+  Serial.print(color.blue);
+  Serial.print(", ");
+  Serial.println(tubeState * 10);
 
   action->advanceFrame();
 }
@@ -274,9 +276,8 @@ void loop() {
 
   // If the state has changed, we add a transition
   if (tubeState != previousState) {
-      int startBrightness = currentBrightness;
-      int startHue = currentHue;
-      setAnimationForState(startBrightness, startHue, true);  // Start a smooth transition to the new animation
+      CRGB startColor = currentColor;
+      setAnimationForState(startColor, true);  // Start a smooth transition to the new animation
   }
 
   if (currentMillis - lastFrameTime >= FRAME_DELAY) {
