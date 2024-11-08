@@ -127,15 +127,15 @@ void idleAnimation() {
 }
 
 void lowActivityAnimation() {
-    addLightAction(1000, 130, 180, 139, 90); // Green hue
+    addLightAction(1000, 130, 180, 139, 64); // to yellow hue
 }
 
 void moderateActivityAnimation() {
-    addLightAction(750, 180, 215, 90, 25); // Green hue
+    addLightAction(750, 180, 215, 64, 220); // to pink hue
 }
 
 void highActivityAnimation() {
-    addLightAction(500, 215, 255, 25, 0); // Red hue
+    addLightAction(500, 215, 255, 220, 130); // to cyan hue
 }
 
 // Function to update tube state based on active sensors with hysteresis
