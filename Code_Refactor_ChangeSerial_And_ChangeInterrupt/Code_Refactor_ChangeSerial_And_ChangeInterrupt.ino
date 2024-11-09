@@ -5,7 +5,7 @@
 #define MAX_ACTIONS 10
 #define FPS         30
 #define FRAME_DELAY (1000 / FPS)
-#define TUBE_ID 1
+#define TUBE_ID 5
 
 CRGB leds[NUM_LEDS];
 unsigned long lastFrameTime = 0;
@@ -302,7 +302,8 @@ void send_serial(int activation) {
  
   // Construct the message to send
   String message = "id=" + String(TUBE_ID); // Convert id to String
-  message += ":activation_level=" + String(activation); // Convert activation to String
+  message += ":activation_level="; // Convert activation to String
+  message += String(activation);
   message += '\n'; // Add a newline character to signify the end of the message
  
   Serial.println(message); // Print the message to the Serial Monitor for debugging
