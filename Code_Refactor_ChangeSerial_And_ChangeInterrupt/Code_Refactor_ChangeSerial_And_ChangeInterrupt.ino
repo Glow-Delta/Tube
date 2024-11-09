@@ -5,7 +5,7 @@
 #define MAX_ACTIONS 10
 #define FPS         30
 #define FRAME_DELAY (1000 / FPS)
-#define TUBE_ID 5
+#define TUBE_ID 2
 
 CRGB leds[NUM_LEDS];
 unsigned long lastFrameTime = 0;
@@ -127,15 +127,15 @@ void idleAnimation() {
 }
 
 void lowActivityAnimation() {
-    addLightAction(1000, 130, 180, 40, 64); // to yellow hue
+    addLightAction(1000, 130, 180, 139, 90); // to yellow hue
 }
 
 void moderateActivityAnimation() {
-    addLightAction(750, 180, 215, 64, 190); // to pink hue
+    addLightAction(750, 180, 215, 90, 25); // to pink hue
 }
 
 void highActivityAnimation() {
-    addLightAction(500, 215, 255, 120, 140); // to cyan hue
+    addLightAction(500, 215, 255, 25, 0); // to cyan hue
 }
 
 // Function to update tube state based on active sensors with hysteresis
@@ -148,7 +148,7 @@ void updateTubeState() {
             break;
 
         case 1: // Low activity state
-            if (activeSensors <= 2) {
+            if (activeSensors <= 1) {
                 tubeState = 0; // Back to Idle
             } else if (activeSensors >= 8) {
                 tubeState = 2; // Switch to Moderate activity
@@ -156,7 +156,7 @@ void updateTubeState() {
             break;
 
         case 2: // Moderate activity state
-            if (activeSensors <= 5) {
+            if (activeSensors <= 4) {
                 tubeState = 1; // Back to Low activity
             } else if (activeSensors >= 13) {
                 tubeState = 3; // Switch to High activity
@@ -164,7 +164,7 @@ void updateTubeState() {
             break;
 
         case 3: // High activity state
-            if (activeSensors <= 10) {
+            if (activeSensors <= 8) {
                 tubeState = 2; // Back to Moderate activity
             }
             break;
