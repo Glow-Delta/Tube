@@ -70,11 +70,12 @@ void sensorLoopMethod() {
   handleSensorLogic();
 
   activeSensors = getAmountOfActivatedSensors();
+  // Serial.println(activeSensors);
 
   updateTubeState();
 
   if (millis() - lastSerialCom > SERIAL_COM_DELAY_MS) {
-    send_serial(tubeState);
+    send_serial(activeSensors);
     //printDistances(distances);
     //Serial.println(tubeState);
     lastSerialCom = millis();
