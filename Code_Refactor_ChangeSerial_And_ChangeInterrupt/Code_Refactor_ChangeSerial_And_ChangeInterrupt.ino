@@ -153,7 +153,7 @@ void updateTubeState() {
             break;
 
         case 1: // Low activity state
-            if (activeSensors <= 2) {
+            if (activeSensors <= 1) {
                 tubeState = 0; // Back to Idle
             } else if (activeSensors >= 8) {
                 tubeState = 2; // Switch to Moderate activity
@@ -161,7 +161,7 @@ void updateTubeState() {
             break;
 
         case 2: // Moderate activity state
-            if (activeSensors <= 5) {
+            if (activeSensors <= 4) {
                 tubeState = 1; // Back to Low activity
             } else if (activeSensors >= 13) {
                 tubeState = 3; // Switch to High activity
@@ -169,7 +169,7 @@ void updateTubeState() {
             break;
 
         case 3: // High activity state
-            if (activeSensors <= 10) {
+            if (activeSensors <= 8) {
                 tubeState = 2; // Back to Moderate activity
             }
             break;
