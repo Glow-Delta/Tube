@@ -1,8 +1,8 @@
 #include <FastLED.h>
 
 #define LED_PIN     5
-#define NUM_LEDS    461
-#define MAX_ACTIONS 10
+#define NUM_LEDS    460
+#define MAX_ACTIONS 5
 #define FPS         30
 #define FRAME_DELAY (1000 / FPS)
 #define TUBE_ID 1
@@ -303,7 +303,9 @@ void send_serial(int activation) {
  
   // Construct the message to send
   String message = "id=" + String(TUBE_ID); // Convert id to String
-  message += ":activation_level=" + String(activation); // Convert activation to String
+  message += ":activation_level="; // Convert activation to String
+  message += String(activation);
+
   message += '\n'; // Add a newline character to signify the end of the message
  
   Serial.println(message); // Print the message to the Serial Monitor for debugging
