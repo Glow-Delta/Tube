@@ -1,7 +1,7 @@
 #include <FastLED.h>
 
 #define LED_PIN     5
-#define NUM_LEDS    461
+#define NUM_LEDS    460
 #define MAX_ACTIONS 10
 #define FPS         30
 #define FRAME_DELAY (1000 / FPS)
@@ -133,25 +133,25 @@ void addLightAction(int duration, int minBrightness, int maxBrightness, uint8_t 
 
 // Define animations for each state with hue
 void idleAnimation() {
-    uint8_t beginHue[3] = {184, 184, 184};
+    uint8_t beginHue[3] = {184, 184, 0};
     uint8_t endHue[3] = {139, 139, 139};
     addLightAction(1500, 100, 130, beginHue, endHue);
 }
 
 void lowActivityAnimation() {
-    uint8_t beginHue[3] = {139, 139, 139};
+    uint8_t beginHue[3] = {139, 139, 0};
     uint8_t endHue[3] = {90, 90, 90};
     addLightAction(1500, 100, 130, beginHue, endHue);
 }
 
 void moderateActivityAnimation() {
-    uint8_t beginHue[3] = {90, 90, 90};
+    uint8_t beginHue[3] = {90, 90, 139};
     uint8_t endHue[3] = {25, 25, 25};
     addLightAction(1500, 100, 130, beginHue, endHue);
 }
 
 void highActivityAnimation() {
-    uint8_t beginHue[3] = {25, 25, 25};
+    uint8_t beginHue[3] = {25, 25, 139};
     uint8_t endHue[3] = {0, 0, 0};
     addLightAction(1500, 100, 130, beginHue, endHue);
 }
@@ -267,13 +267,26 @@ void setAnimationForState(int startBrightness = 0, int startHue[3] = nullptr, bo
 // Function to process the current animation frame
 void processCurrentAction(LightAction* action) {
   BrightnessHuePair BHPair = action->getCurrentBrightnessAndHue();
-  int progress;
-  int goal = 0;
-  for (int i = 0; i < 9; i++) {
-    goal =+ NUM_LEDS%9;
-    for (int i = progress; i < goal; i++)
-      leds[i] = CHSV(BHPair.hue, 255, BHPair.brightness);
+
+  for (int i = 0; i < NUM_LEDS; i++){
+    leds[i] = CHSV(40, 255, BHPair.brightness);
   }
+  /*
+  for (int i = 76; i < 152; i++){
+    leds[i] = CHSV(BHPair.hue[1], 255, BHPair.brightness);
+  }
+  for (int i = 152; i < 228; i++){
+    leds[i] = CHSV(BHPair.hue[2], 255, BHPair.brightness);
+  }
+  for (int i = 228; i < 304; i++){
+    leds[i] = CHSV(BHPair.hue[0], 255, BHPair.brightness);
+  }
+  for (int i = 304; i < 380; i++){
+    leds[i] = CHSV(BHPair.hue[1], 255, BHPair.brightness);
+  }
+  for (int i = 380; i < NUM_LEDS; i++){
+    leds[i] = CHSV(BHPair.hue[2], 255, BHPair.brightness);
+  }*/
 
   
 
